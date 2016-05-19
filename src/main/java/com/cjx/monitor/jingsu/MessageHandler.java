@@ -56,6 +56,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			}
 
 			ObjectMapper om = new ObjectMapper();
+			client.useTube("data.reading");
 			client.put(1000, 0, 120, Serializer.serializableToByteArray(om.writeValueAsString(data)));
 
 			if (data.getFailCount() > 0) {
