@@ -69,9 +69,12 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 					.writeValueAsString(data)));
 
 			if (data.getFailCount() > 0) {
-				ctx.writeAndFlush(Unpooled.copiedBuffer(
+				ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(
 						"CSV" + (data.getFailCount() - 1),
 						Charset.forName("ascii")));
+				if (future.isSuccess()) {
+					logger.debug("Succeed to send CSV");
+				}
 			} else {
 				Map<String, Object> result = jdbc
 						.queryForMap(
