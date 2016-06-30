@@ -23,31 +23,37 @@ import org.springframework.stereotype.Component;
 
 import com.cjx.monitor.jingsu.util.CRC16Modbus;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.surftools.BeanstalkClient.Client;
 import com.surftools.BeanstalkClientImpl.Serializer;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class MessageHandler extends ChannelInboundHandlerAdapter {
-	private static final Logger logger = LoggerFactory.getLogger(MessageHandler.class);
+	private static final Logger logger = LoggerFactory
+			.getLogger(MessageHandler.class);
 
 	@Autowired
 	private JdbcTemplate jdbc;
 	@Autowired
 	private Client client;
 
-	private static AttributeKey<Queue<ByteBuf>> key = AttributeKey.newInstance("settings");
-	private static AttributeKey<Integer> sensorIdKey = AttributeKey.valueOf("sensorId");
+	private static AttributeKey<Queue<ByteBuf>> key = AttributeKey
+			.newInstance("settings");
+	private static AttributeKey<Integer> sensorIdKey = AttributeKey
+			.valueOf("sensorId");
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		super.channelActive(ctx);
 		logger.debug("New connection arrived!");
-		ctx.writeAndFlush(Unpooled.copiedBuffer("ALLSU", Charset.forName("ascii")));
+		ctx.writeAndFlush(Unpooled.copiedBuffer("ALLSU",
+				Charset.forName("ascii")));
 	}
 
 	@Override
-	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+	public void channelRead(ChannelHandlerContext ctx, Object msg)
+			throws Exception {
 		if (msg instanceof MonitorMessage) {
 			MonitorMessage data = (MonitorMessage) msg;
 			logger.debug("Received monitor data:{}", data);
@@ -56,20 +62,28 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			}
 
 			ObjectMapper om = new ObjectMapper();
+			om.setDateFormat(new ISO8601DateFormat());
+
 			client.useTube("data.reading");
-			client.put(1000, 0, 120, Serializer.serializableToByteArray(om.writeValueAsString(data)));
+			client.put(1000, 0, 120, Serializer.serializableToByteArray(om
+					.writeValueAsString(data)));
 
 			if (data.getFailCount() > 0) {
-				ctx.writeAndFlush(Unpooled.copiedBuffer("CSV" + (data.getFailCount() - 1), Charset.forName("ascii")));
+				ctx.writeAndFlush(Unpooled.copiedBuffer(
+						"CSV" + (data.getFailCount() - 1),
+						Charset.forName("ascii")));
 			} else {
 				Map<String, Object> result = jdbc
 						.queryForMap(
 								"select xsensor.id, is_synced synced, temp_revision tempRev, hum_revision as humRev,upload_frequency frequency from xsensor join xdevice on xsensor.device_id=xdevice.id where xdevice.code=?",
 								data.getDeviceId());
-				boolean synced = result.get("synced").toString().equals("1") ? true : false;
-				double tempRev = Double.valueOf(result.get("tempRev").toString());
+				boolean synced = result.get("synced").toString().equals("1") ? true
+						: false;
+				double tempRev = Double.valueOf(result.get("tempRev")
+						.toString());
 				double humRev = Double.valueOf(result.get("humRev").toString());
-				int frequency = Integer.valueOf(result.get("frequency").toString());
+				int frequency = Integer.valueOf(result.get("frequency")
+						.toString());
 				int id = Integer.valueOf(result.get("id").toString());
 
 				Queue<ByteBuf> settings = new LinkedList<ByteBuf>();
@@ -86,8 +100,9 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 					ctx.writeAndFlush(setting);
 				} else {
 					logger.info("Nothing need to be synced.");
-					ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer("ALLSU", Charset.forName("ascii")));
-					if(future.isSuccess()){
+					ChannelFuture future = ctx.writeAndFlush(Unpooled
+							.copiedBuffer("ALLSU", Charset.forName("ascii")));
+					if (future.isSuccess()) {
 						logger.info("Proactively close connection");
 						ctx.close();
 					}
@@ -101,12 +116,14 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			if (null != setting) {
 				ctx.writeAndFlush(setting);
 			} else {
-				ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer("ALLSU", Charset.forName("ascii")));
-				if(future.isSuccess()){
+				ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(
+						"ALLSU", Charset.forName("ascii")));
+				if (future.isSuccess()) {
 					logger.info("Proactively close connection");
 					ctx.close();
 				}
-				jdbc.update("update xsensor set is_synced=true where id=?", ctx.attr(sensorIdKey).get());
+				jdbc.update("update xsensor set is_synced=true where id=?", ctx
+						.attr(sensorIdKey).get());
 			}
 		} else {
 			logger.error("Failed to process message type:{}", msg.getClass());
@@ -121,7 +138,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 		frequencySetting.writeShort(frequency);
 
 		CRC16Modbus crc = new CRC16Modbus();
-		crc.update(frequencySetting.array(), 0, frequencySetting.readableBytes());
+		crc.update(frequencySetting.array(), 0,
+				frequencySetting.readableBytes());
 		frequencySetting.writeBytes(crc.getCrcBytes());
 		return frequencySetting;
 	}
