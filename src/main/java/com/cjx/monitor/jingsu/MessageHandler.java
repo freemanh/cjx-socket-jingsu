@@ -45,7 +45,6 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		super.channelActive(ctx);
-		logger.debug("New connection arrived!");
 		ctx.writeAndFlush(Unpooled.copiedBuffer("ALLSU",
 				Charset.forName("ascii")));
 	}
@@ -55,7 +54,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			throws Exception {
 		if (msg instanceof MonitorMessage) {
 			MonitorMessage data = (MonitorMessage) msg;
-			logger.debug("Received monitor data:{}", data);
+			logger.info("Received monitor data:{}", data);
 
 			ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new ISO8601DateFormat());
