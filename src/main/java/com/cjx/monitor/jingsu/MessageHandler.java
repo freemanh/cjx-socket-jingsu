@@ -8,7 +8,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.AttributeKey;
 
 import java.nio.charset.Charset;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -57,9 +56,6 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 		if (msg instanceof MonitorMessage) {
 			MonitorMessage data = (MonitorMessage) msg;
 			logger.debug("Received monitor data:{}", data);
-			if (null == data.getDate()) {
-				data.setDate(new Date());
-			}
 
 			ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new ISO8601DateFormat());
@@ -107,7 +103,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 							.copiedBuffer("RECEIVE", Charset.forName("ascii")));
 					if (future.isSuccess()) {
 						logger.info("Proactively close connection");
-						//ctx.close();
+						ctx.close();
 					}
 				}
 

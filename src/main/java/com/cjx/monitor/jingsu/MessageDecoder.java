@@ -3,10 +3,14 @@ package com.cjx.monitor.jingsu;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
+import io.netty.util.AttributeKey;
 
+import java.util.ArrayDeque;
 import java.util.Date;
+import java.util.Deque;
 import java.util.List;
 
+import org.apache.commons.lang3.time.DateUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
@@ -20,6 +24,9 @@ import org.springframework.stereotype.Component;
 public class MessageDecoder extends ReplayingDecoder<Void> {
 	private static final Logger logger = LoggerFactory
 			.getLogger(MessageDecoder.class);
+
+	private static AttributeKey<Deque<MonitorMessage>> failureDataKey = AttributeKey
+			.newInstance("failureData");
 
 	@Override
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in,
@@ -46,9 +53,9 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			List<Object> out) {
 		// skip body length
 		byte len = in.readByte();
-		logger.info("message length:{}", len);
+		logger.debug("message length:{}", len);
 		short type = in.readShort();
-		logger.info("message type:{}", type);
+		logger.debug("message type:{}", type);
 
 		switch (type) {
 		case 35: {
@@ -61,13 +68,22 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			in.readShort();
 			// fail count
 			int failCount = in.readShort();
+			if (failCount == 0) {
+				logger.warn("the fail count should not be 0 when in type 35!");
+			}
 			boolean poweroff = (in.readShort() == 1);
 			// CRC
 			in.readShort();
 
 			String deviceCode = "Jingsu" + id;
-			out.add(new MonitorMessage(deviceCode, temp, hum, poweroff,
-					failCount, null));
+
+			ctx.attr(failureDataKey).setIfAbsent(
+					new ArrayDeque<MonitorMessage>());
+			ctx.attr(failureDataKey)
+					.get()
+					.offerFirst(
+							new MonitorMessage(deviceCode, temp, hum, poweroff,
+									failCount, null));
 
 			break;
 		}
@@ -87,9 +103,21 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			Date date = DateTimeFormat.forPattern("yy-MM-dd HH:mm:ss")
 					.withZone(DateTimeZone.forOffsetHours(8))
 					.parseDateTime(dateStr + " " + timeStr).toDate();
-			out.add(new MonitorMessage(deviceCode, temp, hum, false, failCount,
-					date));
 
+			MonitorMessage oldest = new MonitorMessage(deviceCode, temp, hum,
+					false, failCount, date);
+			ctx.attr(failureDataKey).setIfAbsent(
+					new ArrayDeque<MonitorMessage>());
+			Deque<MonitorMessage> msgs = ctx.attr(failureDataKey).get();
+			while (!msgs.isEmpty()) {
+				MonitorMessage msg = msgs.pollFirst();
+
+				date = DateUtils.addMinutes(date, 1);
+				msg.setDate(date);
+
+				out.add(msg);
+			}
+			out.add(oldest);
 			break;
 		}
 		case 31: {
