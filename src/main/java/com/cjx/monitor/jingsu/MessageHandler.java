@@ -104,10 +104,10 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 				} else {
 					logger.info("Nothing need to be synced.");
 					ChannelFuture future = ctx.writeAndFlush(Unpooled
-							.copiedBuffer("ALLSU", Charset.forName("ascii")));
+							.copiedBuffer("RECEIVE", Charset.forName("ascii")));
 					if (future.isSuccess()) {
 						logger.info("Proactively close connection");
-						ctx.close();
+						//ctx.close();
 					}
 				}
 
