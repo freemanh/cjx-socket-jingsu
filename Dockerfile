@@ -12,9 +12,9 @@ RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
 ENV MAVEN_HOME /usr/share/maven
 
 ADD pom.xml /tmp/build/
-RUN cd /tmp/build && mvn dependency:resolve-plugins && mvn -q dependency:resolve
+RUN cd /tmp/build && mvn -q dependency:resolve-plugins && mvn -q dependency:resolve
 ADD src /tmp/build/src
-RUN cd /tmp/build && mvn clean package && mv target/*.jar /app.jar \
+RUN cd /tmp/build && mvn -q clean package && mv target/*.jar /app.jar \
     && cd / && rm -rf /tmp/build
     
 EXPOSE 8001
