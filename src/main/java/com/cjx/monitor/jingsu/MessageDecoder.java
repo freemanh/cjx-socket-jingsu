@@ -25,7 +25,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 	protected void decode(ChannelHandlerContext ctx, ByteBuf in,
 			List<Object> out) throws Exception {
 		short header = in.readShort();
-		logger.info("message header:{}", header);
+		logger.debug("message header:{}", header);
 		switch (header) {
 		case 3: {
 			processMonitorData(ctx, in, out);
@@ -52,6 +52,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 
 		switch (type) {
 		case 35: {
+			logger.info("get a normal uploading...");
 			int id = in.readInt();
 			double temp = in.readShort() * 0.1;
 			double hum = in.readShort() * 0.1;
@@ -67,6 +68,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 
 			String deviceCode = "Jingsu" + id;
 
+			logger.debug("give current date as message date");
 			MonitorMessage msg = new MonitorMessage(deviceCode, temp, hum,
 					poweroff, failCount, new Date());
 			out.add(msg);
@@ -74,6 +76,8 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			break;
 		}
 		case 127: {
+			logger.info("get a failure uploading...");
+
 			int id = in.readInt();
 			String dateStr = String.format("%1$x-%2$x-%3$x", in.readByte(),
 					in.readByte(), in.readByte());
@@ -82,6 +86,8 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			double temp = in.readShort() * 0.1;
 			double hum = in.readShort() * 0.1;
 			short failCount = in.readShort();
+			logger.debug("fail count is:{}", failCount);
+
 			// skip CRC
 			in.readShort();
 			String deviceCode = "Jingsu" + id;
@@ -97,6 +103,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			break;
 		}
 		case 31: {
+			logger.info("get a normal uploading which not support power off...");
 			// not support power off
 			int id = in.readInt();
 			double temp = in.readShort() * 0.1;
@@ -112,7 +119,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			in.readShort();
 			String deviceCode = "Jingsu" + id;
 			out.add(new MonitorMessage(deviceCode, temp, hum, false, failCount,
-					null));
+					new Date()));
 			break;
 		}
 		default: {
@@ -134,7 +141,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 
 			String deviceCode = "Jingsu" + id;
 			out.add(new MonitorMessage(deviceCode, temp, hum, poweroff,
-					failCount, null));
+					failCount, new Date()));
 		}
 		}
 

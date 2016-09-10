@@ -50,5 +50,4 @@ public class ServerConfig {
 	public Client beanstalkdClient(@Value("${beanstalkd.host}") String host, @Value("${beanstalkd.port}") int port) {
 		return new ClientImpl(host, port);
 	}
-
 }

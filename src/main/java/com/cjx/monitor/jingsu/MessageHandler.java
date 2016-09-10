@@ -19,6 +19,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.cjx.monitor.jingsu.util.CRC16Modbus;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,6 +65,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 					.writeValueAsString(data)));
 
 			if (data.getFailCount() > 0) {
+				logger.info("ask for more failure message...");
 				ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(
 						"CSV" + (data.getFailCount() - 1),
 						Charset.forName("ascii")));
@@ -71,10 +73,8 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 					logger.debug("Succeed to send CSV");
 				}
 			} else {
-				Map<String, Object> result = jdbc
-						.queryForMap(
-								"select xsensor.id, is_synced synced, temp_revision tempRev, hum_revision as humRev,upload_frequency frequency from xsensor join xdevice on xsensor.device_id=xdevice.id where xdevice.code=?",
-								data.getDeviceId());
+				logger.info("start to sync setting with device...");
+				Map<String, Object> result = getSyncSetting(data);
 				boolean synced = result.get("synced").toString().equals("1") ? true
 						: false;
 				double tempRev = Double.valueOf(result.get("tempRev")
@@ -96,6 +96,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 
 					ByteBuf setting = settings.poll();
 					ctx.writeAndFlush(setting);
+					logger.info("succeed to sycn:{}", setting);
 				} else {
 					logger.info("Nothing need to be synced.");
 					ChannelFuture future = ctx.writeAndFlush(Unpooled
@@ -109,10 +110,12 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 			}
 
 		} else if (msg instanceof String) {
+			logger.info("contiune to sync setting with device...");
 			Queue<ByteBuf> settings = ctx.attr(key).get();
 			ByteBuf setting = settings.poll();
 			if (null != setting) {
 				ctx.writeAndFlush(setting);
+				logger.info("succeed to sycn setting: {}", setting);
 			} else {
 				ChannelFuture future = ctx.writeAndFlush(Unpooled.copiedBuffer(
 						"ALLSU", Charset.forName("ascii")));
@@ -120,12 +123,26 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
 					logger.info("Proactively close connection");
 					ctx.close();
 				}
-				jdbc.update("update xsensor set is_synced=true where id=?", ctx
-						.attr(sensorIdKey).get());
+				updateSyncResult(ctx);
 			}
 		} else {
 			logger.error("Failed to process message type:{}", msg.getClass());
 		}
+	}
+
+	@Transactional
+	private Map<String, Object> getSyncSetting(MonitorMessage data) {
+		Map<String, Object> result = jdbc
+				.queryForMap(
+						"select xsensor.id, is_synced synced, temp_revision tempRev, hum_revision as humRev,upload_frequency frequency from xsensor join xdevice on xsensor.device_id=xdevice.id where xdevice.code=?",
+						data.getDeviceId());
+		return result;
+	}
+
+	@Transactional
+	private void updateSyncResult(ChannelHandlerContext ctx) {
+		jdbc.update("update xsensor set is_synced=true where id=?",
+				ctx.attr(sensorIdKey).get());
 	}
 
 	private ByteBuf genFrequencySetting(int frequency) {
