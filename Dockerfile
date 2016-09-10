@@ -15,7 +15,7 @@ ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
 
 ADD pom.xml /tmp/build/
 RUN cd /tmp/build && mvn -q dependency:resolve-plugins && mvn -q dependency:resolve
-RUN ls /root/.m2
+RUN ls /root/.m2/repository
 ADD src /tmp/build/src
 RUN cd /tmp/build && mvn clean package && mv target/*.jar /app.jar \
     && cd / && rm -rf /tmp/build
