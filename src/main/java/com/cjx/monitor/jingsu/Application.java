@@ -14,10 +14,14 @@ import org.springframework.context.annotation.Configuration;
 @EnableAutoConfiguration
 @ComponentScan
 public class Application {
-	public static final Logger logger = LoggerFactory.getLogger(Application.class);
+	public static final Logger logger = LoggerFactory
+			.getLogger(Application.class);
 
 	public static void main(String[] args) {
-		final ConfigurableApplicationContext ctx = SpringApplication.run(Application.class, args);
+		logger.debug(System.getenv().toString());
+		
+		final ConfigurableApplicationContext ctx = SpringApplication.run(
+				Application.class, args);
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
