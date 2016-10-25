@@ -17,10 +17,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.cjx.monitor.jingsu.MessageDecoder;
-import com.cjx.monitor.jingsu.MessageHandler;
-import com.surftools.BeanstalkClient.Client;
-import com.surftools.BeanstalkClientImpl.ClientImpl;
+import com.cjx.monitor.jingsu.codec.MessageDecoder;
+import com.cjx.monitor.jingsu.codec.MessageHandler;
 
 @Configuration
 public class ServerConfig {
@@ -44,10 +42,5 @@ public class ServerConfig {
 		// Bind and start to accept incoming connections.
 		return b.bind(port); // (7)
 
-	}
-
-	@Bean
-	public Client beanstalkdClient(@Value("${beanstalkd.host}") String host, @Value("${beanstalkd.port}") int port) {
-		return new ClientImpl(host, port);
 	}
 }

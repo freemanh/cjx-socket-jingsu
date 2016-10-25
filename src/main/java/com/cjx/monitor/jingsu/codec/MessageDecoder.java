@@ -1,4 +1,4 @@
-package com.cjx.monitor.jingsu;
+package com.cjx.monitor.jingsu.codec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -66,11 +66,9 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			// CRC
 			in.readShort();
 
-			String deviceCode = "Jingsu" + id;
-
 			logger.debug("give current date as message date");
-			MonitorMessage msg = new MonitorMessage(deviceCode, temp, hum,
-					poweroff, failCount, new Date());
+			MonitorMessage msg = new MonitorMessage(String.valueOf(id), temp,
+					hum, poweroff, failCount, new Date());
 			out.add(msg);
 
 			break;
@@ -90,14 +88,13 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 
 			// skip CRC
 			in.readShort();
-			String deviceCode = "Jingsu" + id;
 
 			Date date = DateTimeFormat.forPattern("yy-MM-dd HH:mm:ss")
 					.withZone(DateTimeZone.forOffsetHours(8))
 					.parseDateTime(dateStr + " " + timeStr).toDate();
 
-			MonitorMessage old = new MonitorMessage(deviceCode, temp, hum,
-					false, failCount, date);
+			MonitorMessage old = new MonitorMessage(String.valueOf(id), temp,
+					hum, false, failCount, date);
 			out.add(old);
 
 			break;
@@ -117,9 +114,8 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 
 			// CRC
 			in.readShort();
-			String deviceCode = "Jingsu" + id;
-			out.add(new MonitorMessage(deviceCode, temp, hum, false, failCount,
-					new Date()));
+			out.add(new MonitorMessage(String.valueOf(id), temp, hum, false,
+					failCount, new Date()));
 			break;
 		}
 		default: {
@@ -139,8 +135,7 @@ public class MessageDecoder extends ReplayingDecoder<Void> {
 			// CRC
 			in.readShort();
 
-			String deviceCode = "Jingsu" + id;
-			out.add(new MonitorMessage(deviceCode, temp, hum, poweroff,
+			out.add(new MonitorMessage(String.valueOf(id), temp, hum, poweroff,
 					failCount, new Date()));
 		}
 		}

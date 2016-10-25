@@ -1,20 +1,20 @@
-package com.cjx.monitor.jingsu;
+package com.cjx.monitor.jingsu.codec;
 
 import java.io.Serializable;
 import java.util.Date;
 
 public class MonitorMessage implements Serializable {
 	private static final long serialVersionUID = -8463977024952077993L;
-	private String deviceId;
+	private String deviceCode;
 	private Double reading1;
 	private Double reading2;
 	private boolean poweroff;
 	private int failCount;
 	private Date date;
 
-	public MonitorMessage(String deviceId, Double reading1, Double reading2, boolean poweroff, int failCount, Date date) {
+	public MonitorMessage(String deviceCode, Double reading1, Double reading2, boolean poweroff, int failCount, Date date) {
 		super();
-		this.deviceId = deviceId;
+		this.deviceCode = deviceCode;
 		this.reading1 = reading1;
 		this.reading2 = reading2;
 		this.poweroff = poweroff;
@@ -24,7 +24,7 @@ public class MonitorMessage implements Serializable {
 
 	@Override
 	public String toString() {
-		return "MonitorMessage [deviceId=" + deviceId + ", reading1=" + reading1 + ", reading2=" + reading2 + ", poweroff=" + poweroff + ", failCount=" + failCount + ", date="
+		return "MonitorMessage [deviceCode=" + deviceCode + ", reading1=" + reading1 + ", reading2=" + reading2 + ", poweroff=" + poweroff + ", failCount=" + failCount + ", date="
 				+ date + "]";
 	}
 
@@ -60,12 +60,12 @@ public class MonitorMessage implements Serializable {
 		return date;
 	}
 
-	public String getDeviceId() {
-		return deviceId;
+	public String getDeviceCode() {
+		return deviceCode;
 	}
 
-	public void setDeviceId(String deviceId) {
-		this.deviceId = deviceId;
+	public void setDeviceCode(String deviceCode) {
+		this.deviceCode = deviceCode;
 	}
 
 	public void setFailCount(int failCount) {
